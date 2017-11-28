@@ -58,7 +58,7 @@ namespace TestProject
                     var value = queue.Pop();
                     Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} получил из очереди элемент со значением {value}");
                 }
-                catch (Exception exception)
+                catch (MultithreadQueueEmptyException exception)
                 {
                     Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId}: {exception.Message}");
                     break;
