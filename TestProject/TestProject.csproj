@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MultithreadQueue\MultithreadQueue.cs" />
+    <Compile Include="MultithreadQueue\MultithreadQueueEmptyException.cs" />
     <Compile Include="PairsFinder\PairsFinder.cs" />
     <Compile Include="PairsFinder\PairsOfNumbers.cs" />
     <Compile Include="Program.cs" />

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using TestProject.MultithreadQueue;
 
 namespace TestProject
@@ -17,16 +18,14 @@ namespace TestProject
         private static void FirstTask()
         {
             var queue = new MultithreadQueue<int>();
-            StartConcurrentQueue(queue, 15);
-            PrintQueue(queue);
+            
+            StartConcurrentQueue(queue, 15, 10);
         }
 
         private static void SecondTask()
         {
             var collection = new List<int> { 5, 9, 3, 2, 4, 1, 4, 1 };
             var sumNumber = 6;
-            //var collection = new List<int> { 1, 1, 2, 1, 1, 0, 1 };
-            //var sumNumber = 2;
             var pairs = PairsFinder.PairsFinder.FindAllPairs(collection, sumNumber);
             foreach (var pair in pairs)
             {
@@ -34,30 +33,55 @@ namespace TestProject
             }
         }
 
-        private static void StartConcurrentQueue(MultithreadQueue<int> queue, int threadCount)
+        private static void StartConcurrentQueue(MultithreadQueue<int> queue, int pushThreadCount, int popThreadCount)
         {
-            var threads = new Thread[threadCount];
-            WaitHandle[] handles = new WaitHandle[threadCount];
-            for (int i = 0; i < threadCount; i++)
+            var random = new Random();
+            var maxRand = 100;
+            var pushTasks = new Task[pushThreadCount];
+            var popTasks = new Task[popThreadCount];
+            for (int i = 0; i < pushThreadCount; i++)
             {
-                var i1 = i;
-                handles[i] = new ManualResetEvent(false);
-                threads[i] = new Thread(() =>
-                {
-                    queue.Push(i1);
-                    ((ManualResetEvent)handles[i1]).Set();
-                });
-                threads[i].Start();
+                pushTasks[i] = new Task(() => PushQueue(queue, random, maxRand));
             }
-            WaitHandle.WaitAll(handles);
+            for (int i = 0; i < popThreadCount; i++)
+            {
+                popTasks[i] = new Task(() => PopQueue(queue));
+            }
+            foreach (var task in popTasks)
+            {
+                task.Start();
+            }
+            foreach (var task in pushTasks)
+            {
+                task.Start();
+            }
+            Task.WaitAll(pushTasks);
+            queue.PushFinished();
+            Task.WaitAll(popTasks);
+            Console.WriteLine($"Проверка очереди: {queue.Count()}");
         }
 
-        private static void PrintQueue(MultithreadQueue<int> queue)
+        private static void PushQueue(MultithreadQueue<int> queue, Random random, int maxRand)
         {
-            while (queue.Count() != 0)
+            var value = random.Next(maxRand);
+            Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} добавил в очередь элемент со значением {value}");
+            queue.Push(value);
+        }
+
+        private static void PopQueue(MultithreadQueue<int> queue)
+        {
+            while (true)
             {
-                var element = queue.Pop();
-                Console.WriteLine(element);
+                try
+                {
+                    var value = queue.Pop();
+                    Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId} получил из очереди элемент со значением {value}");
+                }
+                catch(Exception exception)
+                {
+                    Console.WriteLine($"Поток {Thread.CurrentThread.ManagedThreadId}: {exception.Message}");
+                    break;
+                }
             }
         }
     }
